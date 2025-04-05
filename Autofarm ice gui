@@ -1,198 +1,105 @@
+local function sendNotification()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Goto Gifts", 
+        Text = "Make SURE YOU ARE ON THE GIFTS.", 
+        Icon = "rbxassetid://your_icon_id_here", -- Optional icon ID
+        Duration = 5 -- Duration in seconds
+    })
+end
+
+-- Call the function to show the notification
+sendNotification()
+
+local function rename(remotename, hashedremote)
+    hashedremote.Name = remotename
+end
+
+local AC_MODULE = game:GetService("ReplicatedStorage").ClientModules.Core.RouterClient.RouterClient
+
+local initFunction = require(AC_MODULE).init
+local upvalueTable = getupvalue(initFunction, 7)
+
+if type(upvalueTable) == "table" then
+    table.foreach(upvalueTable, rename)
+else
+print("patch rip")
+end
+
 -- Services
 local Players = game:GetService("Players")
-local StarterGui = game:GetService("StarterGui")
-local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
--- Player Variables
+-- Player Setup
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- Path to RingPickups
-local interiors = workspace:FindFirstChild("Interiors")
-local blossomShakedownInterior = interiors and interiors:FindFirstChild("BlossomShakedownInterior")
-local ringPickups = blossomShakedownInterior and blossomShakedownInterior:FindFirstChild("RingPickups")
+-- Status UI
+local statusUI = Instance.new("TextLabel")
+statusUI.Size = UDim2.new(0, 250, 0, 40)
+statusUI.Position = UDim2.new(0.5, -125, 0, 10)
+statusUI.AnchorPoint = Vector2.new(0.5, 0)
+statusUI.BackgroundTransparency = 0.7
+statusUI.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+statusUI.TextColor3 = Color3.fromRGB(255, 105, 180)
+statusUI.Text = "🌸 Initializing... 🌸"
+statusUI.Font = Enum.Font.GothamBold
+statusUI.TextSize = 14
+statusUI.Parent = player:WaitForChild("PlayerGui")
 
--- GUI Creation with Cherry Blossom Theme
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "CherryBlossomTeleporter"
-ScreenGui.Parent = player:WaitForChild("PlayerGui")
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 220, 0, 120)
-Frame.Position = UDim2.new(0.5, -110, 0.5, -60)
-Frame.AnchorPoint = Vector2.new(0.5, 0.5)
-Frame.BackgroundColor3 = Color3.fromRGB(255, 183, 197)
-Frame.BackgroundTransparency = 0.2
-Frame.BorderSizePixel = 0
-Frame.Parent = ScreenGui
-
--- Add cherry blossom decoration
-local blossom1 = Instance.new("ImageLabel")
-blossom1.Image = "rbxassetid://13848083809"
-blossom1.Size = UDim2.new(0, 40, 0, 40)
-blossom1.Position = UDim2.new(0, -20, 0, -20)
-blossom1.BackgroundTransparency = 1
-blossom1.Parent = Frame
-
-local blossom2 = blossom1:Clone()
-blossom2.Position = UDim2.new(1, -20, 1, -20)
-blossom2.Rotation = 180
-blossom2.Parent = Frame
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Position = UDim2.new(0, 0, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "🌸Adm Cherry Blossom🌸"
-Title.TextColor3 = Color3.fromRGB(255, 105, 180)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
-Title.Parent = Frame
-
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(0.8, 0, 0, 45)
-ToggleButton.Position = UDim2.new(0.1, 0, 0.35, 0)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 192, 203)
-ToggleButton.BackgroundTransparency = 0.3
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.TextSize = 16
-ToggleButton.Text = "OFF"
-ToggleButton.TextStrokeTransparency = 0.7
-ToggleButton.Parent = Frame
-
--- Add rounded corners
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = Frame
-
-local ButtonCorner = Instance.new("UICorner")
-ButtonCorner.CornerRadius = UDim.new(0, 8)
-ButtonCorner.Parent = ToggleButton
-
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(1, 0, 0, 20)
-StatusLabel.Position = UDim2.new(0, 0, 0.8, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Status: Inactive"
-StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 14
-StatusLabel.Parent = Frame
-
--- Enhanced dragging system
-local dragging, dragInput, dragStart, startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-Frame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = Frame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-Frame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
-    end
-end)
-
--- Optimized teleport function
-local function teleportTo(targetCFrame)
-    if not humanoidRootPart or not humanoidRootPart.Parent then return end
-    humanoidRootPart.CFrame = CFrame.new(targetCFrame.Position, humanoidRootPart.Position + humanoidRootPart.CFrame.LookVector)
-end
-
--- Improved autofarm system
-local teleportActive = false
-local teleportConnection
-
-local function startFarm()
-    if not ringPickups then
-        warn("RingPickups not found!")
-        return
-    end
+-- Main Functions
+local function activateMinigame()
+    -- Activate furniture
+    local args = {
+        [1] = "f-49",
+        [2] = "Seat3",
+        [3] = {
+            ["cframe"] = CFrame.new(92.862, 32.845, -1341.469) * CFrame.Angles(0, -0.734, 0)
+        },
+        [4] = character
+    }
     
-    teleportConnection = RunService.Heartbeat:Connect(function()
-        if not teleportActive then return end
-        
-        for _, model in ipairs(ringPickups:GetChildren()) do
-            if not teleportActive then break end
-            if model:IsA("Model") and model.PrimaryPart then
-                teleportTo(model.PrimaryPart.CFrame + Vector3.new(0, 3, 0))
-                task.wait(0.08) -- Ultra-fast teleportation
-            end
+    ReplicatedStorage.API["HousingAPI/ActivateInteriorFurniture"]:InvokeServer(unpack(args))
+    
+    -- Teleport to circle
+    local circle = workspace.Interiors["MainMap!Default"].Shop.Visual.PagodaCurved.JoinCircleWood.Model.Model.Circle
+    if circle then
+        humanoidRootPart.CFrame = circle.CFrame * CFrame.new(0, 3, 0)
+    end
+end
+
+local function collectRings()
+    local ringPickups = workspace.Interiors.BlossomShakedownInterior.RingPickups
+    for _, ring in ipairs(ringPickups:GetChildren()) do
+        if ring:IsA("Model") and ring.PrimaryPart then
+            humanoidRootPart.CFrame = ring.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
+            task.wait(0.05) -- Faster collection
         end
+    end
+end
+
+-- Main Loop
+RunService.Heartbeat:Connect(function()
+    -- Check if ring pickups exist
+    local success, ringsExist = pcall(function()
+        return workspace.Interiors.BlossomShakedownInterior.RingPickups:FindFirstChildWhichIsA("Model")
     end)
-end
 
-local function toggleFarm()
-    teleportActive = not teleportActive
-    
-    if teleportActive then
-        ToggleButton.Text = "ON"
-        StatusLabel.Text = "Status: Active"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-        startFarm()
+    if success and ringsExist then
+        statusUI.Text = "🌸 Collecting Rings 🌸"
+        collectRings()
     else
-        ToggleButton.Text = "OFF"
-        StatusLabel.Text = "Status: Inactive"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 192, 203)
-        if teleportConnection then
-            teleportConnection:Disconnect()
-        end
-    end
-end
-
--- Toggle button functionality
-ToggleButton.MouseButton1Click:Connect(toggleFarm)
-ToggleButton.TouchTap:Connect(toggleFarm)
-
--- Character handling
-player.CharacterAdded:Connect(function(newCharacter)
-    character = newCharacter
-    humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
-    
-    -- Restart farm if it was active
-    if teleportActive then
-        toggleFarm()
-        task.wait()
-        toggleFarm()
+        statusUI.Text = "🌸 Starting Minigame 🌸"
+        activateMinigame()
+        task.wait(3) -- Wait for minigame to load
     end
 end)
 
--- Initial notification
-StarterGui:SetCore("SendNotification", {
-    Title = "🌸Adm Cherry Blossom🌸",
-    Text = "Press the button to start farming!",
-    Duration = 5,
-    Icon = "rbxassetid://13848083809"
-})
-
--- Cleanup
-ScreenGui.Destroying:Connect(function()
-    if teleportConnection then
-        teleportConnection:Disconnect()
-    end
+-- Handle character changes
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    humanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
+    statusUI.Text = "🌸 Ready 🌸"
 end)
