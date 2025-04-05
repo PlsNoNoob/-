@@ -100,7 +100,7 @@ local function collectRings()
         humanoidRootPart.CFrame = ring.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
         collected = collected + 1
         statusUI.Text = string.format("🌸 Collecting (%d/%d) 🌸", collected, #rings)
-        task.wait(0.05) -- Optimal speed
+        task.wait(0.10) -- Optimal speed
     end
     
     return #rings > 0
