@@ -1,28 +1,26 @@
+-- Notification System
 local function sendNotification()
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Goto Gifts", 
-        Text = "Make SURE YOU ARE ON THE GIFTS.", 
-        Icon = "rbxassetid://your_icon_id_here", -- Optional icon ID
-        Duration = 5 -- Duration in seconds
+        Text = "Make SURE YOU ARE ON THE GIFTS", 
+        Duration = 5
     })
 end
-
--- Call the function to show the notification
 sendNotification()
 
+-- Remote Setup (if needed)
 local function rename(remotename, hashedremote)
     hashedremote.Name = remotename
 end
 
 local AC_MODULE = game:GetService("ReplicatedStorage").ClientModules.Core.RouterClient.RouterClient
-
 local initFunction = require(AC_MODULE).init
-local upvalueTable = getupvalue(initFunction, 7)
+local upvalueTable = debug.getupvalue(initFunction, 7) or {}
 
 if type(upvalueTable) == "table" then
-    table.foreach(upvalueTable, rename)
-else
-print("patch rip")
+    for k,v in pairs(upvalueTable) do
+        rename(k,v)
+    end
 end
 
 -- Services
@@ -49,7 +47,7 @@ statusUI.Font = Enum.Font.GothamBold
 statusUI.TextSize = 14
 statusUI.Parent = player:WaitForChild("PlayerGui")
 
--- Main Functions
+-- Optimized Functions
 local function activateMinigame()
     -- Activate furniture
     local args = {
@@ -61,45 +59,88 @@ local function activateMinigame()
         [4] = character
     }
     
-    ReplicatedStorage.API["HousingAPI/ActivateInteriorFurniture"]:InvokeServer(unpack(args))
+    local success = pcall(function()
+        ReplicatedStorage.API["HousingAPI/ActivateInteriorFurniture"]:InvokeServer(unpack(args))
+    end)
+    
+    if not success then
+        statusUI.Text = "🌸 Failed to Activate 🌸"
+        return false
+    end
     
     -- Teleport to circle
+    task.wait(0.5)
     local circle = workspace.Interiors["MainMap!Default"].Shop.Visual.PagodaCurved.JoinCircleWood.Model.Model.Circle
     if circle then
         humanoidRootPart.CFrame = circle.CFrame * CFrame.new(0, 3, 0)
+        return true
     end
+    return false
 end
 
 local function collectRings()
-    local ringPickups = workspace.Interiors.BlossomShakedownInterior.RingPickups
-    for _, ring in ipairs(ringPickups:GetChildren()) do
+    local success, ringFolder = pcall(function()
+        return workspace.Interiors.BlossomShakedownInterior.RingPickups
+    end)
+    
+    if not success or not ringFolder then return false end
+    
+    local collected = 0
+    local rings = {}
+    
+    -- Cache all valid rings first
+    for _, ring in ipairs(ringFolder:GetChildren()) do
         if ring:IsA("Model") and ring.PrimaryPart then
-            humanoidRootPart.CFrame = ring.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.05) -- Faster collection
+            table.insert(rings, ring)
         end
+    end
+    
+    -- Teleport to each ring
+    for _, ring in ipairs(rings) do
+        humanoidRootPart.CFrame = ring.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
+        collected = collected + 1
+        statusUI.Text = string.format("🌸 Collecting (%d/%d) 🌸", collected, #rings)
+        task.wait(0.05) -- Optimal speed
+    end
+    
+    return #rings > 0
+end
+
+-- Main Farm Loop
+local function autoFarmLoop()
+    while true do
+        -- Try collecting rings first
+        local collected = collectRings()
+        
+        -- If no rings collected, start minigame
+        if not collected then
+            if not activateMinigame() then
+                statusUI.Text = "🌸 Error - Retrying... 🌸"
+                task.wait(3)
+            else
+                task.wait(3) -- Wait for minigame to load
+            end
+        end
+        
+        task.wait()
     end
 end
 
--- Main Loop
-RunService.Heartbeat:Connect(function()
-    -- Check if ring pickups exist
-    local success, ringsExist = pcall(function()
-        return workspace.Interiors.BlossomShakedownInterior.RingPickups:FindFirstChildWhichIsA("Model")
-    end)
-
-    if success and ringsExist then
-        statusUI.Text = "🌸 Collecting Rings 🌸"
-        collectRings()
-    else
-        statusUI.Text = "🌸 Starting Minigame 🌸"
-        activateMinigame()
-        task.wait(3) -- Wait for minigame to load
-    end
-end)
-
--- Handle character changes
+-- Character Handling
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
     statusUI.Text = "🌸 Ready 🌸"
+    task.wait(1) -- Brief delay after respawn
+end)
+
+-- Start the farm
+task.spawn(function()
+    while true do
+        local success, err = pcall(autoFarmLoop)
+        if not success then
+            statusUI.Text = "🌸 Error: "..tostring(err).." 🌸"
+            task.wait(3)
+        end
+    end
 end)
