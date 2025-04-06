@@ -1,0 +1,65 @@
+# static.yml - Configuration for NotCrazyHub Scripts static website
+
+site:
+  name: "Shxdrag Scripts"
+  description: "Free Roblox Adopt Me Scripts for 2025"
+  baseUrl: "/"
+  language: "en"
+  theme: "dark"
+
+build:
+  outputDir: "./dist"
+  cleanUrls: true
+  prettyUrls: true
+  trailingSlash: false
+
+routes:
+  - from: /(.*)
+    to: /index.html
+    status: 200
+
+headers:
+  - source: /(.*)
+    headers:
+      - key: Cache-Control
+        value: "public, max-age=3600"
+      - key: X-Frame-Options
+        value: "DENY"
+      - key: X-Content-Type-Options
+        value: "nosniff"
+      - key: Referrer-Policy
+        value: "strict-origin-when-cross-origin"
+
+redirects:
+  - from: /old-scripts
+    to: /
+    status: 301
+
+optimization:
+  minify: true
+  bundle: true
+  preload: true
+  inlineCriticalCSS: true
+
+features:
+  serviceWorker: true
+  manifest: true
+  sitemap: true
+
+security:
+  contentSecurityPolicy: |
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://www.youtube.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    img-src 'self' data: https://img.youtube.com;
+    font-src 'self' https://fonts.gstatic.com;
+    connect-src 'self';
+    frame-src https://www.youtube.com;
+
+environment:
+  production:
+    baseUrl: "https://notcrazyhub.example.com"
+    analytics:
+      google: "UA-XXXXX-Y"
+  development:
+    baseUrl: "http://localhost:8080"
