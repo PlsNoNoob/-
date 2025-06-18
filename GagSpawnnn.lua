@@ -8,7 +8,7 @@ local RunService = game:GetService("RunService")
 -- Configuration
 local COUNTDOWN_DURATION = 90 -- seconds
 local SCRIPT_TO_COPY = [[
-loadstring(game:HttpGet("https://raw.githubusercontent.com/PlsNoNoob/-/refs/heads/main/GagVeryGood"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/iwantsom3/script/refs/heads/main/Gagspawner.lua"))()
 ]]
 
 -- Local variables
